@@ -1,21 +1,23 @@
 import { Editor } from "@monaco-editor/react";
 import type { Monaco } from "@monaco-editor/react";
 import { emmetHTML } from "emmet-monaco-es";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import "./App.css";
 
 type Dispatch = () => void;
+type PreviewContent = string;
 
 function App() {
   const dispatchRef = useRef<Dispatch | null>(null);
+  const [previewContent, setPreviewContent] = useState<PreviewContent>("");
 
   const handleEditorWillMount = (monaco: Monaco) => {
     dispatchRef.current = emmetHTML(monaco);
   };
 
   const handleEditorChange = (value: string | undefined) => {
-    console.log(value);
+    setPreviewContent(value || "");
   };
 
   useEffect(() => {
@@ -47,9 +49,11 @@ function App() {
         </div>
 
         <div className="content">
-          <iframe>
-            <h1>Preview</h1>
-          </iframe>
+          <iframe
+            title="Preview"
+            srcDoc={previewContent}
+            sandbox="allow-scripts"
+          />
         </div>
       </section>
     </div>
