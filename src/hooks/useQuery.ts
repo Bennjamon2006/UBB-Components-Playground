@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import wrapError from "../utils/wrapError";
 
 type QueryState<T> =
@@ -22,26 +22,34 @@ type QueryResult<T, A extends unknown[]> = {
   execute: (...args: A) => Promise<void>;
 };
 
-export function useQuery<T, A extends unknown[]>(
+export default function useQuery<T, A extends unknown[]>(
   queryFn: (...args: A) => Promise<T>,
 ): QueryResult<T, A> {
   const [state, setState] = useState<QueryState<T>>({ status: "idle" });
+  const promiseRef = useRef<Promise<void> | null>(null);
 
   const execute = useCallback(
     async (...args: A) => {
-      if (state.status === "loading") {
-        return;
+      if (promiseRef.current) {
+        return promiseRef.current;
       }
 
       setState({ status: "loading" });
 
-      try {
-        const data = await queryFn(...args);
+      const promise = queryFn(...args)
+        .then((data) => {
+          setState({ status: "success", data });
+        })
+        .catch((error) => {
+          setState({ status: "error", error: wrapError(error) });
+        })
+        .finally(() => {
+          promiseRef.current = null;
+        });
 
-        setState({ status: "success", data });
-      } catch (error) {
-        setState({ status: "error", error: wrapError(error) });
-      }
+      promiseRef.current = promise;
+
+      return promise;
     },
     [queryFn],
   );

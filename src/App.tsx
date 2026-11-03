@@ -1,6 +1,9 @@
 import { Editor } from "@monaco-editor/react";
 import type { Monaco } from "@monaco-editor/react";
 import { emmetHTML } from "emmet-monaco-es";
+import useQuery from "./hooks/useQuery";
+import stylesService from "./services/stylesService";
+
 import { useEffect, useRef, useState } from "react";
 
 import "./App.css";
@@ -11,6 +14,9 @@ type PreviewContent = string;
 function App() {
   const dispatchRef = useRef<Dispatch | null>(null);
   const [previewContent, setPreviewContent] = useState<PreviewContent>("");
+  const { state: stylesState, execute: fetchStyles } = useQuery(
+    stylesService.getAllStyleSheets,
+  );
 
   const handleEditorWillMount = (monaco: Monaco) => {
     dispatchRef.current = emmetHTML(monaco);
@@ -25,6 +31,14 @@ function App() {
       dispatchRef.current();
     }
   }, []);
+
+  useEffect(() => {
+    fetchStyles();
+  }, [fetchStyles]);
+
+  if (stylesState.status === "success") {
+    console.log("Fetched styles:", stylesState.data);
+  }
 
   return (
     <div className="panel">
